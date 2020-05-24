@@ -70,6 +70,17 @@ struct InputResponse : public InputMessageBase {
     }
 };
 
+struct InputRequest : public InputMessageBase
+{
+    bthread_id_t id_wait;
+    MysqlRequest request;
+
+    // @InputMessageBase
+    void DestroyImpl()
+    {
+    }
+};
+
 bool PackRequest(butil::IOBuf* buf,
                  ControllerPrivateAccessor& accessor,
                  const butil::IOBuf& request) {
@@ -319,6 +330,50 @@ void ProcessMysqlResponse(InputMessageBase* msg_base) {
     // Unlocks correlation_id inside. Revert controller's
     // error code if it version check of `cid' fails
     msg.reset();  // optional, just release resourse ASAP
+    accessor.OnResponse(cid, saved_error);
+}
+
+// TODO: Reference real ProcesRequest
+void ProcessMysqlRequest(InputMessageBase* msg_base)
+{
+    const int64_t start_parse_us = butil::cpuwide_time_us();
+    DestroyingPtr<InputRequest> msg(static_cast<InputRequest*>(msg_base));
+
+    const bthread_id_t cid = msg->id_wait;
+    Controller* cntl = NULL;
+    const int rc = bthread_id_lock(cid, (void**)&cntl);
+    if (rc != 0)
+    {
+        LOG_IF(ERROR, rc != EINVAL && rc != EPERM)
+                << "Fail to lock correlation_id=" << cid << ": " << berror(rc);
+        return;
+    }
+
+    ControllerPrivateAccessor accessor(cntl);
+    Span* span = accessor.span();
+    if (span)
+    {
+        span->set_base_real_us(msg->base_real_us());
+        span->set_received_us(msg->received_us());
+        span->set_request_size(msg->request.ByteSize());
+        span->set_start_parse_us(start_parse_us);
+    }
+
+    const int saved_error = cntl->ErrorCode();
+    // TODO: This seems to be wrong.
+    // if (cntl->request() != NULL)
+    // {
+    //     if (cntl->request()->GetDescriptor() != MysqlRequest::descriptor())
+    //     {
+    //         cntl->SetFailed(EREQUEST, "Must be MysqlRequest");
+    //     }
+    //     else
+    //     {
+    //         ((MysqlRequest*) cntl->request())->Swap(&msg->request);
+    //     }
+    // }
+
+    msg.reset();
     accessor.OnResponse(cid, saved_error);
 }
 

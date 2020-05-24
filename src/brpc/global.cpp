@@ -571,10 +571,10 @@ static void GlobalInitializeOrDieImpl() {
     Protocol mysql_protocol = {ParseMysqlMessage,
                                SerializeMysqlRequest,
                                PackMysqlRequest,
-                               NULL,
+                               ProcessMysqlRequest,
                                ProcessMysqlResponse,
-                               NULL,
-                               NULL,
+                               NULL,    // MysqlVerify
+                               NULL,    // ParseServerAddress
                                GetMysqlMethodName,
                                CONNECTION_TYPE_POOLED_AND_SHORT,
                                "mysql"};

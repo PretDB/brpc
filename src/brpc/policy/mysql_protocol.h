@@ -29,6 +29,13 @@ ParseResult ParseMysqlMessage(butil::IOBuf* source, Socket* socket, bool read_eo
 // Actions to a mysql response.
 void ProcessMysqlResponse(InputMessageBase* msg);
 
+/**
+ * @brief: Actions to a mysql request.
+ *
+ * @param msg Input message.
+ */
+void ProcessMysqlRequest(InputMessageBase* msg);
+
 // Serialize a mysql request.
 void SerializeMysqlRequest(butil::IOBuf* buf,
                            Controller* cntl,

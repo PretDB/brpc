@@ -1,11 +1,11 @@
 // Copyright (c) 2014 Baidu, Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,7 @@
 
 #include <inttypes.h>
 #include <gflags/gflags.h>
-#include "butil/fd_guard.h"                 // fd_guard 
+#include "butil/fd_guard.h"                 // fd_guard
 #include "butil/fd_utility.h"               // make_close_on_exec
 #include "butil/time.h"                     // gettimeofday_us
 #include "brpc/acceptor.h"
@@ -50,7 +50,7 @@ int Acceptor::StartAccept(int listened_fd, int idle_timeout_sec,
         LOG(FATAL) << "Invalid listened_fd=" << listened_fd;
         return -1;
     }
-    
+
     BAIDU_SCOPED_LOCK(_map_mutex);
     if (_status == UNINITIALIZED) {
         if (Initialize() != 0) {
@@ -72,7 +72,7 @@ int Acceptor::StartAccept(int listened_fd, int idle_timeout_sec,
     }
     _idle_timeout_sec = idle_timeout_sec;
     _ssl_ctx = ssl_ctx;
-    
+
     // Creation of _acception_id is inside lock so that OnNewConnections
     // (which may run immediately) should see sane fields set below.
     SocketOptions options;
@@ -84,7 +84,7 @@ int Acceptor::StartAccept(int listened_fd, int idle_timeout_sec,
         LOG(FATAL) << "Fail to create _acception_id";
         return -1;
     }
-    
+
     _listened_fd = listened_fd;
     _status = RUNNING;
     return 0;
@@ -108,8 +108,8 @@ void* Acceptor::CloseIdleConnections(void* arg) {
 }
 
 void Acceptor::StopAccept(int /*closewait_ms*/) {
-    // Currently `closewait_ms' is useless since we have to wait until 
-    // existing requests are finished. Otherwise, contexts depended by 
+    // Currently `closewait_ms' is useless since we have to wait until
+    // existing requests are finished. Otherwise, contexts depended by
     // the requests may be deleted and invalid.
 
     {
@@ -127,7 +127,7 @@ void Acceptor::StopAccept(int /*closewait_ms*/) {
     // of code will be SetFailed directly in OnNewConnectionsUntilEAGAIN
     std::vector<SocketId> erasing_ids;
     ListConnections(&erasing_ids);
-    
+
     for (size_t i = 0; i < erasing_ids.size(); ++i) {
         SocketUniquePtr socket;
         if (Socket::Address(erasing_ids[i], &socket) == 0) {
@@ -154,7 +154,7 @@ int Acceptor::Initialize() {
                    << INITIAL_CONNECTION_CAP;
         return -1;
     }
-    return 0;    
+    return 0;
 }
 
 // NOTE: Join() can happen before StopAccept()
@@ -177,7 +177,7 @@ void Acceptor::Join() {
         bthread_stop(saved_close_idle_tid);
         bthread_join(saved_close_idle_tid, NULL);
     }
-    
+
     {
         BAIDU_SCOPED_LOCK(_map_mutex);
         _status = READY;
@@ -250,7 +250,7 @@ void Acceptor::OnNewConnectionsUntilEAGAIN(Socket* acception) {
             // Do NOT return -1 when `accept' failed, otherwise `_listened_fd'
             // will be closed. Continue to consume all the events until EAGAIN
             // instead.
-            // If the accept was failed, the error may repeat constantly, 
+            // If the accept was failed, the error may repeat constantly,
             // limit frequency of logging.
             PLOG_EVERY_SECOND(ERROR)
                 << "Fail to accept from listened_fd=" << acception->fd();
@@ -263,7 +263,11 @@ void Acceptor::OnNewConnectionsUntilEAGAIN(Socket* acception) {
             acception->SetFailed(EINVAL, "Impossible! acception->user() MUST be Acceptor");
             return;
         }
-        
+
+        if (am->is_mysql_enabled())
+        {
+            // TODO: return a handshake package;
+        }
         SocketId socket_id;
         SocketOptions options;
         options.keytable_pool = am->_keytable_pool;

@@ -25,15 +25,16 @@
 #include <brpc/policy/mysql_authenticator.h>
 
 DEFINE_string(connection_type, "pooled", "Connection type. Available values: pooled, short");
-DEFINE_string(server, "127.0.0.1", "IP Address of server");
+// DEFINE_string(server, "127.0.0.1", "IP Address of server");
+DEFINE_string(server, "lab121.cn", "IP Address of server");
 DEFINE_int32(port, 3306, "Port of server");
-DEFINE_string(user, "brpcuser", "user name");
-DEFINE_string(password, "12345678", "password");
-DEFINE_string(schema, "brpc_test", "schema");
+DEFINE_string(user, "mysqltest", "user name");
+DEFINE_string(password, "mysqltest", "password");
+DEFINE_string(schema, "mysqltest", "schema");
 DEFINE_string(params, "", "params");
 DEFINE_string(collation, "utf8mb4_general_ci", "collation");
-DEFINE_int32(timeout_ms, 5000, "RPC timeout in milliseconds");
-DEFINE_int32(connect_timeout_ms, 5000, "RPC timeout in milliseconds");
+DEFINE_int32(timeout_ms, 5000000, "RPC timeout in milliseconds");
+DEFINE_int32(connect_timeout_ms, -1, "RPC timeout in milliseconds");
 DEFINE_int32(max_retry, 0, "Max retries(not including the first RPC)");
 
 namespace brpc {

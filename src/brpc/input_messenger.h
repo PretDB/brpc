@@ -106,6 +106,14 @@ protected:
     // call callbacks.
     static void OnNewMessages(Socket* m);
 
+    /**
+     * @brief: Indicates that whether this acceptor is mysql only.
+     * ATTENTION: If mysql sql is enabled, server will send handshake initialize
+     * handshake on new connections come. Before adding mysql protocol into
+     * server, you should be aware of what you're doing.
+     */
+    bool _is_mysql_enabled;
+
 private:
     // Find a valid scissor from `handlers' to cut off `header' and `payload'
     // from m->read_buf, save index of the scissor into `index'.
@@ -114,14 +122,6 @@ private:
     // User-supplied scissors and handlers.
     // the index of handler is exactly the same as the protocol
     InputMessageHandler* _handlers;
-
-    /**
-     * @brief: Indicates that whether this acceptor is mysql only.
-     * ATTENTION: If mysql sql is enabled, server will send handshake initialize
-     * handshake on new connections come. Before adding mysql protocol into
-     * server, you should be aware of what you're doing.
-     */
-    bool _is_mysql_enabled;
 
     // Max added protocol type
     butil::atomic<int> _max_index;

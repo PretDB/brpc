@@ -334,10 +334,11 @@ void InputMessenger::OnNewMessages(Socket* m) {
 
 InputMessenger::InputMessenger(size_t capacity)
     : _handlers(NULL)
-    , _is_mysql_enabled(false)
     , _max_index(-1)
     , _non_protocol(false)
-    , _capacity(capacity) {
+    , _capacity(capacity)
+    , _is_mysql_enabled(false)
+{
 }
 
 InputMessenger::~InputMessenger() {
@@ -348,6 +349,10 @@ InputMessenger::~InputMessenger() {
 }
 
 int InputMessenger::AddHandler(const InputMessageHandler& handler) {
+    if (strcmp(handler.name, "mysql") == 0)
+    {
+        _is_mysql_enabled = true;
+    }
     if (handler.parse == NULL || handler.process == NULL
             || handler.name == NULL) {
         CHECK(false) << "Invalid argument";

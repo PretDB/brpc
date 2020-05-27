@@ -17,11 +17,16 @@
 
 #include <inttypes.h>
 #include <gflags/gflags.h>
+#include <memory>
+#include <new>
+#include "brpc/mysql.h"
 #include "butil/fd_guard.h"                 // fd_guard
 #include "butil/fd_utility.h"               // make_close_on_exec
+#include "butil/iobuf.h"
 #include "butil/time.h"                     // gettimeofday_us
 #include "brpc/acceptor.h"
-
+#include "brpc/controller.h"
+#include "brpc/policy/mysql_protocol.h"
 
 namespace brpc {
 
@@ -264,10 +269,6 @@ void Acceptor::OnNewConnectionsUntilEAGAIN(Socket* acception) {
             return;
         }
 
-        if (am->is_mysql_enabled())
-        {
-            // TODO: return a handshake package;
-        }
         SocketId socket_id;
         SocketOptions options;
         options.keytable_pool = am->_keytable_pool;
@@ -279,6 +280,42 @@ void Acceptor::OnNewConnectionsUntilEAGAIN(Socket* acception) {
         if (Socket::Create(options, &socket_id) != 0) {
             LOG(ERROR) << "Fail to create Socket";
             continue;
+        }
+
+        if (am->is_mysql_enabled())
+        {
+            // TODO: return a handshake package;
+            // connection id ??
+            uint8_t handshake_packet[] = {
+                  0x52, 0x00, 0x00, 0x00, 0x0a, 0x35, 0x2e, 0x35,
+                  0x2e, 0x36, 0x34, 0x2d, 0x4d, 0x61, 0x72, 0x69,
+                  0x61, 0x44, 0x42, 0x00, 0x8e, 0x0a, 0x00, 0x00,
+                  0x51, 0x65, 0x28, 0x36, 0x76, 0x6f, 0x4d, 0x6f,
+                  0x00, 0xff, 0xf7, 0x21, 0x02, 0x00, 0x0f, 0xa0,
+                  0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x67, 0x38, 0x7e, 0x34, 0x28,
+                  0x67, 0x51, 0x3f, 0x2a, 0x50, 0x36, 0x5a, 0x00,
+                  0x6d, 0x79, 0x73, 0x71, 0x6c, 0x5f, 0x6e, 0x61,
+                  0x74, 0x69, 0x76, 0x65, 0x5f, 0x70, 0x61, 0x73,
+                  0x73, 0x77, 0x6f, 0x72, 0x64, 0x00
+            };
+
+            butil::IOBuf handshake_buf;
+            for (int i = 0; i < 86; ++i)
+            {
+                handshake_buf.push_back(handshake_packet[i]);
+            }
+            std::unique_ptr<Controller> cntl( new (std::nothrow) Controller);
+
+            SocketUniquePtr s;
+            Socket::Address(socket_id, &s);
+            s->Write(&handshake_buf);
+            // s->SetFailed();
+            // if (Socket::Create(options, &socket_id) != 0)
+            // {
+            //     LOG(ERROR) << "Fail to create Socket after server greeting.";
+            //     continue;
+            // }
         }
         in_fd.release(); // transfer ownership to socket_id
 
